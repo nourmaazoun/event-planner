@@ -5,78 +5,94 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
-    /**
-     * Afficher la liste des catégories
-     */
     public function index()
     {
-        $categories = Category::withCount('events')->latest()->paginate(10);
+        $categories = Category::withCount('events')->paginate(10);
         return view('admin.categories.index', compact('categories'));
     }
 
-    /**
-     * Afficher le formulaire de création
-     */
-    public function create()
-    {
-        return view('admin.categories.create');
-    }
-
-    /**
-     * Enregistrer une nouvelle catégorie
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories',
+        // Vérifier si c'est une requête AJAX
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request type'
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:categories,name'
         ]);
 
-        Category::create($validated);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-        return redirect()->route('admin.categories.index')
-                        ->with('success', 'Catégorie créée avec succès !');
+        $category = Category::create([
+            'name' => $request->name
+        ]);
+
+        // Charger le count des événements
+        $category->loadCount('events');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category created successfully!',
+            'category' => $category
+        ], 201);
     }
 
-    /**
-     * Afficher le formulaire d'édition
-     */
-    public function edit(Category $category)
-    {
-        return view('admin.categories.edit', compact('category'));
-    }
-
-    /**
-     * Mettre à jour une catégorie
-     */
     public function update(Request $request, Category $category)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+        // Vérifier si c'est une requête AJAX
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request type'
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id
         ]);
 
-        $category->update($validated);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-        return redirect()->route('admin.categories.index')
-                        ->with('success', 'Catégorie mise à jour avec succès !');
+        $category->update([
+            'name' => $request->name
+        ]);
+
+        // Recharger le count
+        $category->loadCount('events');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category updated successfully!',
+            'category' => $category
+        ]);
     }
 
-    /**
-     * Supprimer une catégorie
-     */
     public function destroy(Category $category)
     {
-        // Vérifier si des événements utilisent cette catégorie
+        // Vérifier si la catégorie a des événements
         if ($category->events()->count() > 0) {
-            return redirect()->route('admin.categories.index')
-                            ->with('error', 'Impossible de supprimer cette catégorie car des événements y sont associés.');
+            return back()->with('error', 'Cannot delete category with events.');
         }
 
         $category->delete();
-
-        return redirect()->route('admin.categories.index')
-                        ->with('success', 'Catégorie supprimée avec succès !');
+        return back()->with('success', 'Category deleted successfully!');
     }
 }

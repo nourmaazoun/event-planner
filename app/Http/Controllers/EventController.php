@@ -24,21 +24,35 @@ class EventController extends Controller
         return view('events.index', compact('events', 'categories'));
     }
     
-    public function show($id)
-    {
-        $event = Event::with('category', 'creator')
-                     ->where('is_active', true) // ⬅️ CORRIGÉ (uniquement is_active)
-                     ->findOrFail($id);
-        
-        $isRegistered = false;
-        if (Auth::check()) {
-            $isRegistered = Registration::where('user_id', Auth::id())
-                                        ->where('event_id', $id)
-                                        ->exists();
-        }
-        
-        return view('events.show', compact('event', 'isRegistered'));
+   public function show(Event $event)
+{
+    // Vérifier si l'événement est actif
+    if (!$event->is_active) {
+        abort(404, 'Cet événement n\'est pas disponible');
     }
+    
+    $event->load('category', 'creator', 'registrations');
+    
+    // Vérifier si l'utilisateur connecté est inscrit
+    $isRegistered = auth()->check() 
+        ? $event->registrations()->where('user_id', auth()->id())->exists()
+        : false;
+
+    // Autres événements similaires (même catégorie ou futurs) - CORRIGÉ
+    $otherEvents = Event::where('id', '!=', $event->id)
+        ->where('is_active', true)
+        ->where('start_date', '>', now())
+        ->where(function($query) use ($event) {
+            // Événements de la même catégorie OU avec peu de places disponibles
+            $query->where('category_id', $event->category_id)
+                  ->orWhere('available_spaces', '<=', 5); // Événements avec 5 places ou moins
+        })
+        ->orderBy('start_date', 'asc')
+        ->limit(4)
+        ->get();
+
+    return view('events.show', compact('event', 'isRegistered', 'otherEvents'));
+}
     
     public function register(Request $request, $id)
     {
@@ -106,24 +120,24 @@ class EventController extends Controller
     /**
      * Afficher les inscriptions de l'utilisateur
      */
-    public function registrations()
-    {
-        if (!auth()->check()) {
-            return redirect()->route('login');
-        }
-
-        // UNIFORMISER : utiliser 'is_active' partout
-        $registrations = auth()->user()->registrations()
-            ->with(['event' => function($query) {
-                $query->where('is_active', true) // ⬅️ CORRIGÉ (uniquement is_active)
-                      ->with('category');
-            }])
-            ->whereHas('event', function($query) {
-                $query->where('is_active', true); // ⬅️ CORRIGÉ (uniquement is_active)
-            })
-            ->latest()
-            ->paginate(10);
-
-        return view('profile.registrations', compact('registrations'));
+   public function registrations()
+{
+    if (!auth()->check()) {
+        return redirect()->route('login');
     }
+
+    // Méthode alternative sans utiliser User::registrations()
+    $registrations = Registration::where('user_id', auth()->id())
+        ->with(['event' => function($query) {
+            $query->where('is_active', true)
+                  ->with('category');
+        }])
+        ->whereHas('event', function($query) {
+            $query->where('is_active', true);
+        })
+        ->latest()
+        ->paginate(10);
+
+    return view('profile.registrations', compact('registrations'));
+}
 }

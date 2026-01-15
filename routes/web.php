@@ -41,9 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     // Dashboard utilisateur
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    
     
     // Inscriptions aux événements
     Route::post('/events/{event}/register', [EventController::class, 'register'])

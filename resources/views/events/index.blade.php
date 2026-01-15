@@ -173,75 +173,69 @@
             </div>
             
             <!-- Liste des événements -->
+                       <!-- Liste des événements -->
             @if($events->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"> <!-- ⬅️ Changé à 4 colonnes et gap réduit -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     @foreach($events as $event)
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden event-card">
-                            <!-- Image réduite -->
-                            <div class="h-40 overflow-hidden relative"> <!-- ⬅️ Réduit de h-48 à h-40 -->
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden event-card flex flex-col h-full">
+                            <!-- Image -->
+                            <div class="h-48 overflow-hidden relative flex-shrink-0">
                                 @if($event->image)
                                     <img src="{{ asset('storage/' . $event->image) }}" 
                                          alt="{{ $event->title }}"
                                          class="w-full h-full object-cover">
                                 @else
-                                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                        <i class="fas fa-calendar-alt text-gray-400 text-3xl"></i> <!-- ⬅️ Réduit text-4xl à text-3xl -->
+                                    <div class="w-full h-full bg-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-calendar-alt text-gray-400 text-4xl"></i>
                                     </div>
                                 @endif
                                 
                                 <!-- Badge catégorie -->
-                                <div class="absolute top-3 left-3"> <!-- ⬅️ Position ajustée -->
-                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-black bg-opacity-50 rounded-full"> <!-- ⬅️ Padding réduit -->
+                                <div class="absolute top-3 left-3">
+                                    <span class="inline-block px-3 py-1 text-xs font-semibold text-white bg-black bg-opacity-60 rounded-full">
                                         {{ $event->category->name ?? 'Sans catégorie' }}
                                     </span>
                                 </div>
                             </div>
                             
                             <!-- Contenu -->
-                            <div class="p-4"> <!-- ⬅️ Padding réduit de p-6 à p-4 -->
+                            <div class="p-4 flex flex-col flex-grow">
                                 <!-- Titre -->
-                                <h3 class="text-lg font-bold text-gray-800 mb-2"> <!-- ⬅️ Réduit text-xl à text-lg -->
+                                <h3 class="text-lg font-bold text-gray-800 mb-2">
                                     <a href="{{ route('events.show', $event) }}" class="hover:text-blue-600 transition">
-                                        {{ Str::limit($event->title, 40) }} <!-- ⬅️ Limite réduite de 50 à 40 -->
+                                        {{ Str::limit($event->title, 40) }}
                                     </a>
                                 </h3>
                                 
-                                <!-- Description courte (réduite) -->
-                                <p class="text-sm text-gray-600 mb-3 line-clamp-2"> <!-- ⬅️ text-sm ajouté -->
-                                    {{ Str::limit($event->description, 80) }} <!-- ⬅️ Limite réduite de 100 à 80 -->
+                                <!-- Description courte -->
+                                <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                                    {{ Str::limit($event->description, 80) }}
                                 </p>
                                 
-                                <!-- Infos réduites -->
-                                <div class="space-y-2 mb-3"> <!-- ⬅️ Espace réduit -->
-                                    <!-- Date en toute lettre en anglais -->
-                                    <div class="flex items-center text-gray-600">
-                                        <i class="fas fa-calendar-day text-blue-500 text-sm w-4 mr-2"></i> <!-- ⬅️ Taille réduite -->
-                                        <span class="text-sm">{{ $event->start_date->format('F j, Y') }}</span> <!-- ⬅️ Format anglais -->
-                                    </div>
-                                    
-                                    <!-- Ligne unique avec heure et lieu -->
-                                   
-                                    
-                                    <!-- Prix sur une ligne -->
-                                 
-                                </div>
-                                
-                                <!-- Places et bouton réduits -->
-                                 <!-- ⬅️ Padding réduit -->
-                                
-                                 <div class="flex justify-between items-center pt-3 border-t">
-    <!-- Espaces -->
-   
-    
-    <!-- Bouton séparé -->
-  <div class="flex justify-center">
-    <a href="{{ route('events.show', $event) }}" 
-       class="bg-purple-600 text-white px-4 py-1.5 rounded text-xs hover:bg-purple-700 transition whitespace-nowrap">
-        View Details
-    </a>
+                                <!-- Infos -->
+                                <div class="mb-4">
+    <div class="flex items-center text-gray-600 text-sm space-x-4">
+        <!-- Date -->
+        <div class="flex items-center">
+            <i class="fas fa-calendar text-blue-500 mr-2"></i>
+            <span>{{ $event->start_date->format('M d, Y') }}</span>
+        </div>
+        
+        <!-- Temps -->
+        <div class="flex items-center">
+            <i class="fas fa-clock text-blue-500 mr-2"></i>
+            <span>{{ $event->start_date->format('H:i') }}</span>
+        </div>
+    </div>
 </div>
-
                                 
+                                <!-- Bouton -->
+                                <div class="mt-auto pt-3 border-t">
+                                    <a href="{{ route('events.show', $event) }}" 
+                                       class="block w-full text-center bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -283,7 +277,7 @@
                     @endif
                 </div>
             @endif
-        </div>
+        </div> <!-- Fermeture de la div max-w-7xl -->
     </main>
 
     <!-- Footer -->
@@ -303,6 +297,7 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.event-card');

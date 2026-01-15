@@ -15,6 +15,27 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 400px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -61,6 +82,29 @@
         </div>
     </nav>
 
+    <!-- Popup de confirmation -->
+    <div id="bookPopup" class="popup-overlay">
+        <div class="popup-content">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Booking</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to book "<strong>{{ $event->title }}</strong>"?</p>
+            
+            <div class="flex justify-between space-x-4">
+                <button type="button" onclick="closePopup()" 
+                        class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                
+                <form id="bookForm" action="{{ route('events.register', $event) }}" method="POST" class="flex-1">
+                    @csrf
+                    <button type="submit" 
+                            class="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
+                        Book Now
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <main class="py-8">
         <div class="max-w-7xl mx-auto px-4">
             <!-- Messages Flash -->
@@ -83,180 +127,170 @@
                 </a>
             </div>
 
-            <!-- Section principale -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <!-- Image avec titre par-dessus -->
-                <div class="relative h-96">
-                    @if($event->image)
-                        <img src="{{ asset('storage/' . $event->image) }}" 
-                             alt="{{ $event->title }}"
-                             class="w-full h-full object-cover">
-                    @else
-                        <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <i class="fas fa-calendar-alt text-gray-400 text-6xl"></i>
-                        </div>
-                    @endif
-                    
-                    <!-- Overlay avec titre et description courte -->
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-8">
-                        <h1 class="text-4xl font-bold text-white mb-3">{{ $event->title }}</h1>
-                        <p class="text-lg text-white/90 max-w-3xl line-clamp-2">
-                            {{ Str::limit($event->description, 150) }}
-                        </p>
-                        
-                        <!-- Bouton Book Now -->
-                        <div class="mt-6">
-                            @if($event->available_spaces > 0)
-                                @if($isRegistered)
-                                    <div class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg">
-                                        <i class="fas fa-check-circle mr-2"></i>
-                                        Already Registered
-                                    </div>
-                                @else
-                                    <form action="{{ route('events.register', $event) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" 
-                                                class="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-bold text-lg shadow-lg">
-                                            <i class="fas fa-ticket-alt mr-2"></i>
-                                            BOOK NOW
-                                        </button>
-                                    </form>
-                                @endif
-                            @else
-                                <div class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg">
-                                    <i class="fas fa-times-circle mr-2"></i>
-                                    SOLD OUT
-                                </div>
-                            @endif
-                        </div>
+            <!-- Image avec titre par-dessus -->
+            <div class="relative h-96 mb-8 rounded-xl overflow-hidden">
+                @if($event->image)
+                    <img src="{{ asset('storage/' . $event->image) }}" 
+                         alt="{{ $event->title }}"
+                         class="w-full h-full object-cover">
+                @else
+                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-gray-400 text-6xl"></i>
                     </div>
-                </div>
-
-                <!-- Contenu principal -->
-                <div class="p-8">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Description (2/3) -->
-                        <div class="lg:col-span-2">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b">Description</h2>
-                            <div class="prose max-w-none">
-                                <p class="text-gray-700 whitespace-pre-line">{{ $event->description }}</p>
-                            </div>
-                            
-                            <!-- Informations supplémentaires -->
-                            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Location</h3>
-                                    <div class="flex items-start">
-                                        <i class="fas fa-map-marker-alt text-red-500 mt-1 mr-3"></i>
-                                        <p class="text-gray-700">{{ $event->place }}</p>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Price</h3>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-tag text-green-500 mr-3"></i>
-                                        <span class="text-2xl font-bold {{ $event->is_free ? 'text-green-600' : 'text-gray-800' }}">
-                                            {{ $event->is_free ? 'FREE' : number_format($event->price, 0) . ' TND' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sidebar avec date et capacité (1/3) -->
-                        <div class="lg:col-span-1">
-                            <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                <!-- Date en GRAND -->
-                                <div class="mb-8">
-                                    <h3 class="text-lg font-semibold text-gray-600 mb-3">Event Date</h3>
-                                    <div class="text-center">
-                                        <div class="text-5xl font-bold text-purple-600 mb-2">
-                                            {{ $event->start_date->format('d') }}
-                                        </div>
-                                        <div class="text-2xl font-bold text-gray-800 mb-1">
-                                            {{ $event->start_date->format('F') }}
-                                        </div>
-                                        <div class="text-xl text-gray-600">
-                                            {{ $event->start_date->format('Y') }}
-                                        </div>
-                                        <div class="mt-3 text-lg text-gray-700">
-                                            <i class="fas fa-clock mr-2"></i>
-                                            {{ $event->start_date->format('g:i A') }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Capacité en GRAND -->
-                                <div class="mb-8">
-                                    <h3 class="text-lg font-semibold text-gray-600 mb-3">Capacity</h3>
-                                    <div class="text-center">
-                                        <div class="text-5xl font-bold text-blue-600 mb-2">
-                                            {{ $event->capacity }}
-                                        </div>
-                                        <div class="text-lg text-gray-700">
-                                            Total Spots
-                                        </div>
-                                        <div class="mt-3">
-                                            <div class="text-sm text-gray-600 mb-1">Available Spots</div>
-                                            <div class="text-3xl font-bold {{ $event->available_spaces > 0 ? 'text-green-600' : 'text-red-600' }}">
-                                                {{ $event->available_spaces }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Barre de progression -->
-                                <div class="mb-6">
-                                    <div class="flex justify-between text-sm text-gray-600 mb-2">
-                                        <span>Registration</span>
-                                        <span>{{ $event->capacity - $event->available_spaces }} / {{ $event->capacity }}</span>
-                                    </div>
-                                    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div class="h-full bg-green-500" 
-                                             style="width: {{ $event->capacity > 0 ? (($event->capacity - $event->available_spaces) / $event->capacity) * 100 : 0 }}%">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Informations rapides -->
-                                <div class="space-y-4">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-calendar-day text-purple-500 w-5 mr-3"></i>
-                                        <span class="text-gray-700">
-                                            Duration: {{ $event->start_date->diffInHours($event->end_date) }} hours
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="flex items-center">
-                                        <i class="fas fa-users text-blue-500 w-5 mr-3"></i>
-                                        <span class="text-gray-700">Category: {{ $event->category->name ?? 'General' }}</span>
-                                    </div>
-                                    
-                                    <div class="flex items-center">
-                                        <i class="fas fa-user-tie text-gray-500 w-5 mr-3"></i>
-                                        <span class="text-gray-700">Organizer: {{ $event->creator->name ?? 'Admin' }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Bouton d'inscription (mobile) -->
-                                @if($event->available_spaces > 0 && !$isRegistered)
-                                <div class="mt-8 lg:hidden">
-                                    <form action="{{ route('events.register', $event) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" 
-                                                class="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-bold text-lg">
-                                            <i class="fas fa-ticket-alt mr-2"></i>
-                                            BOOK NOW
-                                        </button>
-                                    </form>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
+                @endif
+                
+                <!-- Overlay avec titre -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-8">
+                    <h1 class="text-4xl font-bold text-white mb-2">{{ $event->title }}</h1>
+                    <div class="flex items-center space-x-4 text-white/90">
+                        <span class="flex items-center">
+                            <i class="fas fa-tag mr-2"></i>
+                            {{ $event->category->name ?? 'General' }}
+                        </span>
+                        <span>•</span>
+                        <span class="flex items-center">
+                            <i class="fas fa-users mr-2"></i>
+                            {{ $event->capacity }} spots
+                        </span>
                     </div>
                 </div>
             </div>
+
+            <!-- Contenu principal sans grille -->
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Description tout à gauche -->
+                <div class="lg:w-2/3">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">DESCRIPTION</h2>
+                    <div class="text-gray-700 whitespace-pre-line mb-8">{{ $event->description }}</div>
+                    
+                    <!-- Location & Price -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3">
+                          
+                        </div>
+                        
+                        <div class="p-3">
+                            <div class="flex items-center">
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar droite -->
+                <div class="lg:w-1/3 space-y-6">
+                    <!-- HOURS -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3">Hours</h3>
+                        <div class="text-gray-700">
+                            <div class="mb-2">
+                                <strong>Start-Day:</strong> {{ $event->start_date->format('g:i A') }}  
+                            </div>
+                            <div>
+                                <strong>End-Day:</strong> {{ $event->start_date->format('g:i A') }}  
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CAPACITY -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3">Capacity</h3>
+                        <div class="text-gray-700">
+                            Seats number: <strong>{{ $event->capacity }} persons</strong>
+                        </div>
+                    </div>
+
+                    <!-- Ligne de séparation -->
+                    <hr class="my-4">
+
+                    <!-- Bouton Book Now -->
+                    @if($event->available_spaces > 0)
+                        @if($isRegistered)
+                            <div class="text-center p-3">
+                                <div class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    Already Registered
+                                </div>
+                            </div>
+                        @else
+                            <div class="text-center">
+                                <button type="button" onclick="openPopup()"
+                                        class="w-full py-3 bg-black text-white rounded hover:bg-gray-800 transition font-bold">
+                                    BOOK NOW
+                                </button>
+                            </div>
+                        @endif
+                    @else
+                        <div class="text-center p-3">
+                            <div class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 rounded">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                SOLD OUT
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Other Events You Might Like -->
+            @isset($otherEvents)
+                @if($otherEvents->count() > 0)
+                    <div class="mt-12 ml-0 lg:ml-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Other events you may like</h2>
+                        <hr class="mb-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            @foreach($otherEvents as $otherEvent)
+                                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+                                    <!-- Image -->
+                                    <div class="h-48 overflow-hidden relative">
+                                        @if($otherEvent->image)
+                                            <img src="{{ asset('storage/' . $otherEvent->image) }}" 
+                                                 alt="{{ $otherEvent->title }}"
+                                                 class="w-full h-full object-cover">
+                                        @else
+                                            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-calendar-alt text-gray-400 text-3xl"></i>
+                                            </div>
+                                        @endif
+                                        
+                                        <!-- Badge catégorie -->
+                                        <div class="absolute top-3 left-3">
+                                            <span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-black bg-opacity-50 rounded-full">
+                                                {{ $otherEvent->category->name ?? 'General' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contenu -->
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-800 mb-2">
+                                            <a href="{{ route('events.show', $otherEvent) }}" class="hover:text-blue-600">
+                                                {{ Str::limit($otherEvent->title, 40) }}
+                                            </a>
+                                        </h3>
+                                        
+                                        <!-- Date -->
+                                        <div class="flex items-center text-gray-600 text-sm mb-3">
+                                            <i class="fas fa-calendar-day text-blue-500 mr-2"></i>
+                                            <span>{{ $otherEvent->start_date->format('M d, Y') }}</span>
+                                        </div>
+                                        
+                                        <!-- Prix -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium {{ $otherEvent->is_free ? 'text-green-600' : 'text-gray-900' }}">
+                                                {{ $otherEvent->is_free ? 'Free' : number_format($otherEvent->price, 0) . ' TND' }}
+                                            </span>
+                                            <a href="{{ route('events.show', $otherEvent) }}" 
+                                               class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200">
+                                                View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            @endisset
         </div>
     </main>
 
@@ -265,5 +299,30 @@
             <p class="text-gray-400">&copy; {{ date('Y') }} Event Planner. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        // Gestion de la popup
+        function openPopup() {
+            document.getElementById('bookPopup').style.display = 'block';
+        }
+        
+        function closePopup() {
+            document.getElementById('bookPopup').style.display = 'none';
+        }
+        
+        // Fermer la popup en cliquant en dehors
+        document.getElementById('bookPopup').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePopup();
+            }
+        });
+        
+        // Fermer avec Échap
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePopup();
+            }
+        });
+    </script>
 </body>
 </html>
